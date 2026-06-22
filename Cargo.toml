@@ -1,0 +1,29 @@
+[package]
+name = "avm"
+version = "0.1.0"
+edition = "2021"
+description = "Animus Version Manager — pins each project to a specific animus kernel version and dispatches transparently"
+license = "MIT"
+repository = "https://github.com/launchapp-dev/avm"
+default-run = "avm"
+
+[[bin]]
+name = "avm"
+path = "src/bin/avm.rs"
+
+[[bin]]
+name = "animus"
+path = "src/bin/shim.rs"
+
+[dependencies]
+ureq = { version = "2.10", features = ["json", "tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+flate2 = "1"
+tar = "0.4"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
