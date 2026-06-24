@@ -1,0 +1,57 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            cross: false
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            cross: true
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            cross: false
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            cross: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: install cross
+        if: matrix.cross
+        run: cargo install cross --git https://github.com/cross-rs/cross --locked
+      - name: build (cross)
+        if: matrix.cross
+        run: cross build --release --target ${{ matrix.target }}
+      - name: build (native)
+        if: '!matrix.cross'
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: package
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          # One tarball per target, holding BOTH the manager (`avm`) and the
+          # transparent `animus` shim. The install script unpacks both.
+          ARCHIVE="avm-${{ matrix.target }}.tar.gz"
+          tar -C "target/${{ matrix.target }}/release" -czf "dist/${ARCHIVE}" avm animus
+          ( cd dist && shasum -a 256 "${ARCHIVE}" > "${ARCHIVE}.sha256" )
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

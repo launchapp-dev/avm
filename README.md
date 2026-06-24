@@ -20,25 +20,35 @@ Two binaries ship from this repo:
 
 ## Install
 
-Build and install both binaries with Cargo:
+**One-liner (recommended).** Downloads the `avm` manager + the `animus` shim,
+puts the shim first on your `PATH`, and is safe to re-run (upgrades in place):
 
 ```sh
-cargo install --path .          # from a checkout
-# or, once published:
-cargo install --git https://github.com/launchapp-dev/avm
+curl -fsSL https://raw.githubusercontent.com/launchapp-dev/avm/main/install.sh | sh
 ```
 
-Then put the shim ahead of any other `animus` on your `PATH`. `cargo install` places
-both binaries in `~/.cargo/bin`. avm keeps a shims directory at `~/.avm/shims`; symlink
-the Cargo-installed `animus` shim into it and put that dir first on `PATH`:
+Then open a new shell and install a kernel:
 
 ```sh
+avm install v0.6.9            # download a kernel version
+avm use --global v0.6.9       # machine default
+animus --version             # now resolved through avm
+```
+
+The installer drops `avm` into `~/.avm/bin`, the `animus` shim into `~/.avm/shims`,
+and adds `export PATH="$HOME/.avm/shims:$HOME/.avm/bin:$PATH"` to your shell profile
+(ahead of any other `animus`). Env knobs: `AVM_VERSION` (pin the avm release),
+`AVM_HOME` (install root), `AVM_NO_PROFILE=1` (don't edit the profile).
+
+**From source (Cargo).** Builds both binaries into `~/.cargo/bin`:
+
+```sh
+cargo install --git https://github.com/launchapp-dev/avm   # or: cargo install --path .
 mkdir -p ~/.avm/shims
 # link the Cargo-installed shim explicitly — do NOT use `command -v animus`,
 # which would resolve to the shim itself once ~/.avm/shims is on PATH.
 ln -sf "${CARGO_HOME:-$HOME/.cargo}/bin/animus" ~/.avm/shims/animus
-# add to your shell profile, BEFORE other animus locations:
-export PATH="$HOME/.avm/shims:$PATH"
+export PATH="$HOME/.avm/shims:$PATH"   # add to your shell profile, before other animus
 ```
 
 `avm shim-dir` prints the directory to add to `PATH`.
